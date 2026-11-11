@@ -1,0 +1,85 @@
+{
+  "name": "block-detector",
+  "version": "1.0.0",
+  "description": "Detect when a website blocks your scraper but still answers HTTP 200: rate-limit and access-denied pages, empty JavaScript shells, sign-in walls, redirects to the home page, stripped data and decoy pages. Works in the browser, Playwright, Puppeteer and on raw HTML in Node. Zero dependencies.",
+  "keywords": [
+    "scraping",
+    "web-scraping",
+    "block-detection",
+    "soft-block",
+    "soft-404",
+    "anti-bot",
+    "bot-detection",
+    "rate-limit",
+    "captcha",
+    "cloaking",
+    "crawler",
+    "playwright",
+    "puppeteer"
+  ],
+  "license": "MIT",
+  "author": "ScrapePass (https://scrapepass.com)",
+  "homepage": "https://github.com/ScrapePass/block-detector",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ScrapePass/block-detector.git"
+  },
+  "bugs": "https://github.com/ScrapePass/block-detector/issues",
+  "main": "./lib/node.cjs",
+  "module": "./dist/block-detector.mjs",
+  "browser": "./dist/block-detector.js",
+  "unpkg": "./dist/block-detector.js",
+  "jsdelivr": "./dist/block-detector.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "node": {
+        "import": "./lib/node.mjs",
+        "require": "./lib/node.cjs"
+      },
+      "import": "./dist/block-detector.mjs",
+      "require": "./dist/block-detector.js",
+      "default": "./dist/block-detector.js"
+    },
+    "./page": {
+      "types": "./page.d.ts",
+      "import": "./lib/page.mjs",
+      "require": "./lib/page.cjs"
+    },
+    "./script": "./dist/block-detector.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "block-detector": "bin/block-detector.js"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "bin",
+    "index.d.ts",
+    "page.d.ts"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --test test/html.test.mjs test/browser.test.mjs",
+    "test:live": "node scripts/build.mjs && node test/live.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "peerDependencies": {
+    "captcha-detector": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "captcha-detector": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "captcha-detector": "^1.0.0",
+    "playwright": "^1.64.1"
+  }
+}
