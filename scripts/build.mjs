@@ -16,7 +16,7 @@ const strip = (src) =>
 const body = ['src/html.js', 'src/patterns.js', 'src/engine.js'].map((f) => strip(readFileSync(join(root, f), 'utf8'))).join('\n');
 if (!body.includes(`VERSION = '${pkg.version}'`)) throw new Error(`src/engine.js VERSION does not match package.json ${pkg.version}`);
 
-const names = ['VERSION', 'REASONS', 'detect', 'detectHtml', 'detectResponse', 'analyze', 'fingerprint', 'fingerprintHtml', 'fingerprintOf', 'compare', 'snapshotFromDom', 'snapshotFromHtml', 'normalizeExpect', 'use'];
+const names = ['VERSION', 'REASONS', 'detect', 'detectHtml', 'detectResponse', 'analyze', 'fingerprint', 'fingerprintHtml', 'fingerprintOf', 'compare', 'snapshotFromDom', 'snapshotFromHtml', 'normalizeExpect', 'addressWords', 'use'];
 const api = `{ ${names.join(', ')}, rules: RULES }`;
 const banner = `/*! block-detector v${pkg.version} | MIT License | ${pkg.homepage} */\n`;
 

@@ -1,6 +1,6 @@
 {
   "name": "block-detector",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Detect when a website blocks your scraper but still answers HTTP 200: rate-limit and access-denied pages, empty JavaScript shells, sign-in walls, redirects to the home page, stripped data and decoy pages. Works in the browser, Playwright, Puppeteer and on raw HTML in Node. Zero dependencies.",
   "keywords": [
     "scraping",

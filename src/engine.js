@@ -1,7 +1,7 @@
 import { parseHtml, textOf, cleanText, querySelectorAll, hiddenByMarkup } from './html.js';
 import { RULES, BLOCK_PATH, LOGIN_PATH, SKELETON, APP_ROOTS } from './patterns.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 /** Every reason a result can give. The first group means the site served something else on purpose. */
 export const REASONS = {
@@ -14,7 +14,7 @@ export const REASONS = {
   empty: 'A blank or nearly blank page',
   loading: 'Only loading placeholders, the content never arrived',
   stripped: 'The page layout is there, but the expected data is missing',
-  different: 'A different page from the reference fingerprint',
+  different: 'A different page: not like the reference fingerprint, or about none of what the address names',
   'not-found': 'A "page not found" or "no longer available" page',
   error: 'An error or maintenance page',
 };
@@ -197,7 +197,9 @@ function walkBody(body, ad) {
         case 'input': {
           const type = String(ad.attr(k, 'type') || 'text').toLowerCase();
           if (type === 'password') counts.passwordInputs++;
-          if (type !== 'hidden') counts.inputs++;
+          // A submit button is a button, not a field to fill in.
+          if (type === 'submit' || type === 'button' || type === 'image' || type === 'reset') counts.buttons++;
+          else if (type !== 'hidden') counts.inputs++;
           break;
         }
         case 'textarea':
@@ -590,6 +592,59 @@ function checkStructure(s, found) {
   if (/\bnoindex\b/i.test(s.robots) && len < 2000) addTo(found, 'not-found', 0.3, 'meta', `robots: ${s.robots}`);
 }
 
+/**
+ * A gate: a short page whose only content is a form with no fields to fill in (hidden values only) and a button,
+ * "click to continue" (Amazon's "continue shopping" check, consent and age gates, many bot checks). Real pages have
+ * text and links around their forms.
+ */
+function checkGate(s, found) {
+  const c = s.counts;
+  if (s.textLength >= 400 || !c.forms || c.inputs || !c.buttons || c.passwordInputs || c.links > 8) return;
+  addTo(found, 'challenge', 0.65, 'structure', `a gate page: ${s.textLength} characters of text and a form with only hidden fields and ${c.buttons === 1 ? 'a button' : `${c.buttons} buttons`}`);
+}
+
+/** Words of an address that say nothing about the page itself. */
+const PATH_STOP = new Set(['html', 'shtml', 'php', 'aspx', 'index', 'default', 'page', 'pages', 'product', 'products', 'item', 'items', 'detail', 'details', 'view', 'show', 'category', 'categories', 'catalog', 'shop', 'store', 'search', 'list', 'listing', 'listings', 'browse', 'with', 'from', 'your', 'this', 'that', 'what', 'news', 'blog', 'post', 'posts', 'article', 'articles', 'story', 'stories', 'main', 'home', 'info', 'amp', 'mobile', 'desktop', 'www', 'online', 'official', 'best', 'sellers', 'bestsellers', 'deals', 'sale', 'buy']);
+
+/** The words an address names (its path, not ids), e.g. /Wearable-Blanket-Sherpa/dp/B0F… → wearable, blanket, sherpa. */
+export function addressWords(url) {
+  const u = parseUrl(url);
+  if (!u) return [];
+  let path = u.pathname;
+  try {
+    path = decodeURIComponent(path);
+  } catch (_) {
+    /* keep it encoded */
+  }
+  const site = new Set(u.hostname.toLowerCase().split(/[^\p{L}\p{N}]+/u));
+  const words = new Set();
+  for (const seg of path.split('/')) {
+    // A segment with digits and no word breaks is an id (B0FGTRB7ZG, 123456, ref=zg_bs_1).
+    if (/\d/.test(seg) && !/[-_ +]/.test(seg)) continue;
+    if (seg.includes('=')) continue;
+    for (const w of seg.toLowerCase().split(/[^\p{L}]+/u)) {
+      const latin = /^[a-z]+$/.test(w);
+      if (latin ? w.length < 4 : w.length < 2) continue;
+      if (PATH_STOP.has(w) || site.has(w)) continue;
+      words.add(w);
+    }
+  }
+  return [...words].slice(0, 12);
+}
+
+/**
+ * Relevance: an address that names what it is about (2+ words in its path) and a page that says none of them, in its
+ * title, headings or text, is a stand-in page. Counted strongly only on short pages (real pages are rarely short).
+ */
+function checkRelevance(s, found) {
+  const words = addressWords(s.requestedUrl || s.url);
+  if (words.length < 2) return;
+  const hay = [s.title, ...s.h1, ...s.h2, s.text.slice(0, 50000)].join(' ').toLowerCase();
+  const seen = (w) => hay.includes(w) || (w.length > 5 && hay.includes(w.replace(/(?:ies|es|s)$/, '')));
+  if (words.some(seen)) return;
+  addTo(found, 'different', s.textLength < 1500 ? 0.6 : 0.35, 'address', `none of "${words.slice(0, 5).join(' ')}" from the address is on the page`);
+}
+
 /** Blank: the fallback when nothing else explains a page with (almost) no text, media or form fields. Runs last. */
 function checkBlank(s, found) {
   const len = s.textLength;
@@ -715,6 +770,8 @@ export function analyze(s, opts = {}) {
   checkStructure(s, found);
   checkUrls(s, found);
   checkCaptcha(s, opts.captcha, found);
+  checkGate(s, found);
+  checkRelevance(s, found);
   checkExpect(s, found);
   const reference = opts.reference && (!Array.isArray(opts.reference) || opts.reference.length) ? opts.reference : null;
   const cmp = reference ? checkReference(s, reference, found) : null;

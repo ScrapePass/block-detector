@@ -12,6 +12,7 @@ if (!r.ok) console.log(r.summary);
 ```
 
 - **Catches silent blocks:** rate-limit and access-denied pages served as 200, empty app shells, "enable JavaScript" pages, loading placeholders that never fill, sign-in walls, redirects to the home page or a `/blocked` page, block messages inside the site's normal layout, and pages that only *look* normal.
+- **Needs no rule per site:** a "click to continue" gate (a short page whose only content is a form with hidden fields and a button) is a check page, and a short page about none of what its address names (`/wearable-sherpa-blanket/dp/…` with no "blanket" anywhere) is a different page, whatever the site.
 - **Learns what a good page looks like:** fingerprint one good page, then check every other page of the same kind against it. Decoy pages and stripped data stand out even when they contain no block wording.
 - **Checks what you need:** list the selectors the real page must have (`'.price'`, `'.item >= 10'`, `{ selector: '.price', text: /\d/ }`).
 - **Works with [captcha-detector](https://github.com/ScrapePass/captcha-detector):** when it is installed, captchas, bot checks and named block pages from about 70 products are part of the answer.
@@ -41,7 +42,7 @@ r.fingerprint // this page's fingerprint (save it to use as a reference later)
 
 | reason | What the site served | blocked |
 |---|---|---|
-| `challenge` | A bot check or captcha page (header `cf-mitigated`, AWS WAF, or captcha-detector) | yes |
+| `challenge` | A bot check or captcha page (header `cf-mitigated`, AWS WAF, captcha-detector), or a "click to continue" gate: a short page whose only content is a form with no fields to fill in and a button | yes |
 | `access-denied` | "Access denied", "you have been blocked", "unusual traffic", "VPN detected" | yes |
 | `rate-limit` | "Too many requests", "slow down", HTTP 429, `retry-after` | yes |
 | `login` | A sign-in wall, a password form, or a redirect to `/login` | yes |
@@ -50,7 +51,7 @@ r.fingerprint // this page's fingerprint (save it to use as a reference later)
 | `empty` | A blank page | yes |
 | `loading` | Only skeletons / spinners / "Loading…" | yes |
 | `stripped` | The layout is there but `expect` selectors are missing, or far less text than the reference | yes |
-| `different` | Not the same kind of page as the reference fingerprint | yes |
+| `different` | Not the same kind of page as the reference fingerprint, or a short page that mentions none of the words its address names (only a hint on longer pages) | yes |
 | `not-found` | "Page not found", "this listing has been removed", HTTP 404 | no |
 | `error` | "Something went wrong", maintenance, HTTP 5xx | no |
 

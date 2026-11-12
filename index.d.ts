@@ -113,6 +113,8 @@ export declare function detectResponse(response: Response | { data?: unknown; bo
 export declare function fingerprint(options?: { expect?: Expect | Expect[]; window?: Window }): Fingerprint;
 export declare function fingerprintHtml(html: string, options?: { url?: string; expect?: Expect | Expect[] }): Fingerprint;
 export declare function compare(reference: Fingerprint | Fingerprint[], page: Fingerprint | object): Comparison;
+/** The words an address names in its path (ids and generic words left out), used by the relevance check. */
+export declare function addressWords(url: string): string[];
 export declare function analyze(snapshot: object, options?: Options): Result;
 export declare function snapshotFromDom(win?: Window, options?: Options): object;
 export declare function snapshotFromHtml(html: string, options?: Options): object;
@@ -131,6 +133,7 @@ declare const BlockDetector: {
   fingerprint: typeof fingerprint;
   fingerprintHtml: typeof fingerprintHtml;
   compare: typeof compare;
+  addressWords: typeof addressWords;
   analyze: typeof analyze;
   snapshotFromDom: typeof snapshotFromDom;
   snapshotFromHtml: typeof snapshotFromHtml;

@@ -32,6 +32,7 @@ const article =
       '</article>',
   );
 
+const gate = (text, extra = '') => page('Shop', `<div class="box"><h4>${text}</h4><form method="get" action="/errors/check"><input type="hidden" name="t" value="abc"><input type="hidden" name="r" value="/dp/X"><button type="submit">Continue shopping</button></form>${extra}</div><div class="foot"><a href="/terms">Conditions of Use</a> <a href="/privacy">Privacy Policy</a> © 1996-2025, Shop Inc.</div>`);
 export const PRODUCT = product('Steel Water Bottle 750 ml', '$24.99');
 export const PRODUCT_2 = product('Insulated Travel Mug 400 ml', '$18.50', 8);
 
@@ -165,6 +166,24 @@ export const CASES = [
     opts: { expect: ['.related ul.cards > li.card a .card-price'] },
     expect: { ok: false, reason: 'stripped' },
   },
+  {
+    name: 'gate page: a form with only hidden fields and a button (click to continue)',
+    html: gate('Click the button below to continue shopping'),
+    opts: { status: 200, url: 'https://shop.test/Wearable-Blanket-Sherpa-Pockets/dp/B0FGTRB7ZG', requestedUrl: 'https://shop.test/Wearable-Blanket-Sherpa-Pockets/dp/B0FGTRB7ZG' },
+    expect: { ok: false, blocked: true, reasons: ['challenge', 'different'] },
+  },
+  {
+    name: 'gate page with a submit input, at an address with only ids',
+    html: page('Shop', '<p>Please continue to the site.</p><form method="post" action="/go"><input type="hidden" name="k" value="1"><input type="submit" value="Continue"></form>'),
+    opts: { status: 200, url: 'https://shop.test/p/123456', requestedUrl: 'https://shop.test/p/123456' },
+    expect: { ok: false, blocked: true, reason: 'challenge', absent: ['different'] },
+  },
+  {
+    name: 'short page about none of what the address names',
+    html: page('Shop', '<main><h1>Welcome to Shop</h1><p>Find great deals on everything you need, every day. Free delivery on orders over $35.</p><a href="/">Start shopping</a></main>'),
+    opts: { status: 200, url: 'https://shop.test/insulated-travel-mug-400ml/p/77', requestedUrl: 'https://shop.test/insulated-travel-mug-400ml/p/77' },
+    expect: { ok: false, blocked: true, reason: 'different' },
+  },
   // ───── Not the real page, not a block ─────
   {
     name: 'soft 404 inside the site layout',
@@ -188,6 +207,21 @@ export const CASES = [
   },
   // ───── Real pages (must be OK) ─────
   { name: 'normal product page', html: PRODUCT, expect: { ok: true } },
+  { name: 'product page at an address that names it', html: PRODUCT, opts: { url: 'https://shop.test/steel-water-bottles/750ml/p/123', requestedUrl: 'https://shop.test/steel-water-bottles/750ml/p/123' }, expect: { ok: true } },
+  // A long page that doesn't use the address's words is only a hint (a translated page, an old slug).
+  { name: 'long page whose address uses other words', html: PRODUCT, opts: { url: 'https://shop.test/trinkflasche-edelstahl/p/123', requestedUrl: 'https://shop.test/trinkflasche-edelstahl/p/123' }, expect: { ok: true, hints: ['different'] } },
+  {
+    name: 'newsletter page: a form with a field to fill in is no gate',
+    html: page('Newsletter', '<h1>Newsletter</h1><p>Get our weekly deals.</p><form action="/subscribe"><input type="hidden" name="src" value="web"><input type="email" name="email" placeholder="Email"><button>Sign up</button></form>'),
+    opts: { url: 'https://shop.test/newsletter', requestedUrl: 'https://shop.test/newsletter' },
+    expect: { ok: true },
+  },
+  {
+    name: 'cart page with a checkout button and real content',
+    html: layout('Your cart | Example Shop', '<h1>Your cart</h1><ul class="cart">' + Array.from({ length: 3 }, (_, i) => `<li class="cart-item"><a href="/item/${i}">Steel bottle ${i}</a> <span class="price">$2${i}.99</span></li>`).join('') + '</ul><form action="/checkout" method="post"><input type="hidden" name="cart" value="abc"><button>Checkout</button></form>'),
+    opts: { url: 'https://shop.test/cart', requestedUrl: 'https://shop.test/cart' },
+    expect: { ok: true },
+  },
   { name: 'normal product page with expect', html: PRODUCT, opts: { expect: ['h1', '.price', '.card >= 3', { selector: '.price', text: /\$\d/ }] }, expect: { ok: true } },
   { name: 'long article that mentions block messages', html: article, expect: { ok: true } },
   { name: 'long docs page titled "429 Too Many Requests"', html: article.replace(/<title>[^<]*<\/title>/, '<title>429 Too Many Requests - HTTP | Docs</title>'), expect: { ok: true } },
